@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<!-- saved from url=(0053)http://127.0.0.1:5500/Task_manager_web_app/index.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <title>Task Manager</title>
+    <link rel="stylesheet" href="./Task Manager_files/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: url('https://images.unsplash.com/photo-1506784983877-45594efa4cbe') no-repeat center center/cover;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 50px;
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"], input[type="time"] {
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #28a745;
+            border: none;
+            color: white;
+            padding: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            background: #333;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+
+        li.completed {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        li:hover {
+            transform: scale(1.01);
+        }
+
+        .task-buttons i {
+            cursor: pointer;
+            margin-left: 10px;
+            transition: color 0.3s;
+        }
+
+        .task-buttons i:hover {
+            color: #ffc107;
+        }
+
+        .counter {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .empty-message {
+            text-align: center;
+            font-style: italic;
+            color: #bbb;
+            margin-top: 20px;
+        }
+
+        .empty-image {
+            display: block;
+            margin: 20px auto;
+            width: 80px;
+            opacity: 0.7;
+        }
+
+        .task-time {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body data-new-gr-c-s-check-loaded="14.1242.0" data-gr-ext-installed="">
+    <div class="container">
+        <h1><i class="fa-solid fa-list-check"></i> Task Manager</h1>
+
+        <div class="input-section">
+            <input type="text" id="taskInput" placeholder="Enter a new task">
+            <input type="time" id="taskTime" title="Set a reminder time">
+            <button onclick="addTask()"><i class="fa fa-plus"></i> Add Task</button>
+        </div>
+
+        <ul id="taskList"></ul>
+
+        <div class="empty-message" id="emptyMessage" style="display: block;">No tasks added yet!</div>
+        <img src="./Task Manager_files/4076503.png" alt="No Tasks" class="empty-image" id="emptyImage" style="display: block;">
+
+        <div class="counter" id="taskCounter">Total: 0 | Completed: 0</div>
+    </div>
+
+    <script>
+        const taskInput = document.getElementById('taskInput');
+        const taskTimeInput = document.getElementById('taskTime');
+        const taskList = document.getElementById('taskList');
+        const emptyMessage = document.getElementById('emptyMessage');
+        const emptyImage = document.getElementById('emptyImage');
+        const taskCounter = document.getElementById('taskCounter');
+
+        function getStoredTasks() {
+            return JSON.parse(localStorage.getItem('tasks') || '[]');
+        }
+
+        function saveTasks(tasks) {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        function addTask() {
+            const taskText = taskInput.value.trim();
+            const taskTime = taskTimeInput.value;
+
+            if (!taskText) return;
+
+            const task = {
+                text: taskText,
+                time: taskTime,
+                completed: false
+            };
+
+            const tasks = getStoredTasks();
+            tasks.push(task);
+            saveTasks(tasks);
+            renderTasks();
+            taskInput.value = '';
+            taskTimeInput.value = '';
+            scheduleReminder(task);
+        }
+
+        function toggleTask(index) {
+            const tasks = getStoredTasks();
+            tasks[index].completed = !tasks[index].completed;
+            saveTasks(tasks);
+            renderTasks();
+        }
+
+        function deleteTask(index) {
+            const tasks = getStoredTasks();
+            tasks.splice(index, 1);
+            saveTasks(tasks);
+            renderTasks();
+        }
+
+        function scheduleReminder(task) {
+            if (!task.time) return;
+
+            const now = new Date();
+            const [hours, minutes] = task.time.split(':').map(Number);
+            const reminder = new Date();
+            reminder.setHours(hours, minutes, 0, 0);
+
+            const delay = reminder - now;
+            if (delay > 0) {
+                setTimeout(() => {
+                    alert(`🔔 Reminder: ${task.text}`);
+                }, delay);
+            }
+        }
+
+        function renderTasks() {
+            const tasks = getStoredTasks();
+            taskList.innerHTML = '';
+
+            if (tasks.length === 0) {
+                emptyMessage.style.display = 'block';
+                emptyImage.style.display = 'block';
+            } else {
+                emptyMessage.style.display = 'none';
+                emptyImage.style.display = 'none';
+            }
+
+            tasks.forEach((task, index) => {
+                const li = document.createElement('li');
+                if (task.completed) li.classList.add('completed');
+
+                const content = document.createElement('div');
+                const span = document.createElement('span');
+                span.textContent = task.text;
+                content.appendChild(span);
+
+                if (task.time) {
+                    const time = document.createElement('div');
+                    time.className = 'task-time';
+                    time.textContent = `⏰ ${task.time}`;
+                    content.appendChild(time);
+                }
+
+                const buttons = document.createElement('div');
+                buttons.className = 'task-buttons';
+
+                const completeBtn = document.createElement('i');
+                completeBtn.className = 'fa fa-check';
+                completeBtn.title = 'Mark as complete';
+                completeBtn.onclick = () => toggleTask(index);
+
+                const deleteBtn = document.createElement('i');
+                deleteBtn.className = 'fa fa-trash';
+                deleteBtn.title = 'Delete task';
+                deleteBtn.onclick = () => deleteTask(index);
+
+                buttons.appendChild(completeBtn);
+                buttons.appendChild(deleteBtn);
+
+                li.appendChild(content);
+                li.appendChild(buttons);
+                taskList.appendChild(li);
+
+                scheduleReminder(task);
+            });
+
+            updateCounter();
+        }
+
+        function updateCounter() {
+            const tasks = getStoredTasks();
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.completed).length;
+            taskCounter.textContent = `Total: ${total} | Completed: ${completed}`;
+        }
+
+        taskInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+
+        window.onload = renderTasks;
+    </script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+
+</body><grammarly-desktop-integration data-grammarly-shadow-root="true"><template shadowrootmode="open"><style>
+      div.grammarly-desktop-integration {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select:none;
+        user-select:none;
+      }
+
+      div.grammarly-desktop-integration:before {
+        content: attr(data-content);
+      }
+    </style><div aria-label="grammarly-integration" role="group" tabindex="-1" class="grammarly-desktop-integration" data-content="{&quot;mode&quot;:&quot;full&quot;,&quot;isActive&quot;:true,&quot;isUserDisabled&quot;:false}"></div></template></grammarly-desktop-integration></html>
